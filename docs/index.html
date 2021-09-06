@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>水系吐くやつ</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+    crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+    integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+    crossorigin=""></script>
+
+  <style>
+    #map {height: 768px; width: 768px;}
+  </style>
+</head>
+
+<body>
+  <input id="gobtn" type="button" value="go!" onclick="generateImages();">
+  <div id="map"></div><br>
+  <img id="system"><br>
+  <img id="river"><br>
+  <img id="colored"><br>
+  <script>
+    let gobtn = document.getElementById("gobtn");
+    let map = L.map('map');
+
+    L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
+      attribution: "<a href='https://maps.gsi.go.jp/development/ichiran.html' target='_blank'>地理院タイル</a>"
+    }).addTo(map);
+
+    map.setView([35.3622222, 138.7313889], 8);
+
+    function generateImages(){
+      gobtn.disabled = true;
+      let pos  = map.getCenter();
+      let zoom = map.getZoom();
+      let xhr = new XMLHttpRequest();
+      xhr.open("get","http://127.0.0.1:8000/api/images/"+zoom+"/"+pos.lat+"/"+pos.lng+"/"+0.4+"/"+16);
+      xhr.addEventListener("load", ()=>{
+        let imgs = JSON.parse(xhr.responseText);
+        document.getElementById("system").src  = imgs.system;
+        document.getElementById("river").src   = imgs.river;
+        document.getElementById("colored").src = imgs.colored;
+        L.imageOverlay(imgs.colored, L.latLngBounds(tileToPos(imgs.from),tileToPos_downRight(imgs.to))).addTo(map);
+        gobtn.disabled = false;
+      });
+      xhr.send();
+    }
+
+    function tileToPos(arr) {
+      let [zoom, tx, ty] = arr;
+      lon  = (tx*256/Math.pow(2, zoom+7) -1)*180;
+      lat  = 180/Math.PI*(Math.asin(Math.tanh(-Math.PI/(Math.pow(2,zoom+7))*ty*256+Math.PI)));
+      return [lat,lon];
+    }
+
+    function tileToPos_downRight(arr) {
+      let [zoom, tx, ty] = arr;
+      return tileToPos([zoom, tx+1, ty+1]);
+    }
+
+  </script>
+</body>
+</html>
