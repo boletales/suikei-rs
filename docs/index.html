@@ -36,7 +36,7 @@
       let pos  = map.getCenter();
       let zoom = map.getZoom();
       let xhr = new XMLHttpRequest();
-      xhr.open("get","http://127.0.0.1:8000/api/images/"+zoom+"/"+pos.lat+"/"+pos.lng+"/"+0.4+"/"+16);
+      xhr.open("get","/api/images/"+zoom+"/"+pos.lat+"/"+pos.lng+"/"+0.4+"/"+16);
       xhr.addEventListener("load", ()=>{
         let imgs = JSON.parse(xhr.responseText);
         document.getElementById("system").src  = imgs.system;

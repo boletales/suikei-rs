@@ -7,9 +7,11 @@ extern crate rocket;
 extern crate reqwest;
 extern crate base64;
 use image::ImageBuffer;
-use rocket::{fs::NamedFile, serde::{Serialize, json::Json}, response::status::NotFound};
-use std::path::Path;
+use rocket::{fs::NamedFile, serde::{Serialize, json::Json}, response::status::NotFound, config::Config};
+use std::{net::IpAddr, path::Path};
 use suikei_rs::*;
+use std::env;
+use pnet::datalink;
 
 #[derive(Serialize)]
 struct Images { 
@@ -28,19 +30,53 @@ async fn index() -> Result<NamedFile, NotFound<String>> {
 
 #[get("/api/images/<zoom>/<lat>/<long>/<pow>/<mag>")]
 fn api_images_pow(zoom:i32,lat:f64,long:f64,pow:f64,mag:f64) -> Json<Images> {
-  let zoom = if zoom+1>14 {14} else {zoom+1};
-  Json(get_images(zoom,lat,long,2,pow,mag))
+  let zoom =
+    if zoom>14 {
+      14
+    } else {
+      zoom
+    };
+  Json(get_images(zoom,lat,long,1,pow,mag))
 }
 
 #[get("/api/images/<zoom>/<lat>/<long>")]
 fn api_images(zoom:i32,lat:f64,long:f64) -> Json<Images> {
-  let zoom = if zoom+1>14 {14} else {zoom+1};
-  Json(get_images(zoom,lat,long,2,0.2,4.0))
+  let zoom = 
+    if zoom>14 {
+      14
+    } else {
+      zoom
+    };
+  Json(get_images(zoom,lat,long,1,0.2,4.0))
 }
 
 #[launch]
 fn rocket() -> _ {
-  rocket::build().mount("/", routes![index,api_images_pow,api_images])
+  let mut config = Config::release_default();
+  if get_ip_list().len() > 0 {
+    config.address = get_ip_list()[0];
+  }
+  config.port = 
+    match env::var("PORT").map(|x|x.parse()){
+      Ok(Ok(p)) => p,
+      _             => config.port
+    };
+  config.keep_alive = 0;
+  rocket::custom(config).mount("/", routes![index,api_images_pow,api_images])
+}
+
+fn get_ip_list() -> Vec<IpAddr> {
+  let mut ips: Vec<IpAddr> = Vec::new();
+  for interface in datalink::interfaces() {
+    if !interface.ips.is_empty() && interface.is_up() {
+      for ip_net in interface.ips {
+        if ip_net.is_ipv4() && !ip_net.ip().is_loopback() {
+          ips.push(ip_net.ip());
+        }
+      }
+    }
+  };
+  ips
 }
 
 fn get_images(zoom:i32,lat:f64,long:f64,size:i32,pow:f64,mag:f64) -> Images {

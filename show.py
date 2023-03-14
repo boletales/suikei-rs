@@ -4,6 +4,7 @@ import colorsys
 import scipy.signal
 from PIL import Image
 import requests
+from mayavi import mlab
 
 def getURL(zoom,x,y):
   return "https://cyberjapandata.gsi.go.jp/xyz/std/"+str(zoom)+"/"+str(x)+"/"+str(y)+".png"
@@ -66,22 +67,33 @@ masked = pxs2_255*(mask)
 result = np.uint8((mapimg)*(1-mask) + masked)
 #print(root_count)
 
-Image.fromarray(mapimg).save("data/map.png")
-Image.fromarray(result).save("data/result.png")
-Image.fromarray(np.uint8(pxs2_255)).save("data/systems.png")
-Image.fromarray(np.uint8(clip(data)*255)).save("data/height.png")
-Image.fromarray(np.uint8(clip(pretty_count)*255)).save("data/river.png")
-Image.fromarray(np.uint8(clip(light)*255)).save("data/light.png")
-Image.fromarray(np.uint8(masked)).save("data/colored.png")
+#Image.fromarray(mapimg).save("data/map.png")
+#Image.fromarray(result).save("data/result.png")
+#Image.fromarray(np.uint8(pxs2_255)).save("data/systems.png")
+#Image.fromarray(np.uint8(clip(data)*255)).save("data/height.png")
+#Image.fromarray(np.uint8(clip(pretty_count)*255)).save("data/river.png")
+#Image.fromarray(np.uint8(clip(light)*255)).save("data/light.png")
+#Image.fromarray(np.uint8(masked)).save("data/colored.png")
 
-plt.subplot(1,3,1)
-plt.imshow(pxs2, interpolation='none')
-plt.subplot(1,3,2)
+#plt.subplot(1,3,1)
+#plt.imshow(pxs2, interpolation='none')
+#plt.subplot(1,3,2)
 #plt.imshow(np.log(count))
 #plt.imshow(convolved)
-plt.imshow(result)
-plt.colorbar()
-plt.subplot(1,3,3)
-plt.imshow(data)
-plt.colorbar()
-plt.show()
+#plt.imshow(result)
+#plt.colorbar()
+#plt.subplot(1,3,3)
+#plt.imshow(data)
+#plt.colorbar()
+#plt.show()
+
+texture = tvtk.Texture(input_connection=Image.fromarray(result).get_output(), interpolate=0)
+
+mlab.figure(size=(640, 800), bgcolor=(0.16, 0.28, 0.46))
+
+surf = mlab.surf(data, color=(1,1,1), warp_scale=0.2) 
+surf.actor.enable_texture = True
+surf.actor.tcoord_generator_mode = 'plane'
+surf.actor.actor.texture = my_texture
+
+mlab.show()

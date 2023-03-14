@@ -1,0 +1,1 @@
+cargo run --bin suikei_rs --release 
