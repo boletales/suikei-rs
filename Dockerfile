@@ -10,4 +10,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
     cargo build --release && mkdir bin && cp target/release/suikei_rs bin/suikei_rs
 
+ENV PORT=8080
+
 ENTRYPOINT ["/app/bin/suikei_rs"]
